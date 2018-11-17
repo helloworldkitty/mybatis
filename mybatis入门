@@ -1,0 +1,273 @@
+MyBatis 是一款优秀的持久层框架，它支持定制化 SQL、存储过程以及高级映射。
+利用mybatis主要完成两件事：
+1.封装JDBC操作
+2.利用反射打通Java类与SQL语句之间的相互转换
+
+怎么用：
+首先创建一个Maven项目，在pom.xml中添加我们在使用mybatis过程中需要的各种依赖包
+依赖包：https://mvnrepository.com/
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.icss.etc</groupId>
+  <artifactId>mavenweb</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>war</packaging>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+      <plugin>
+      	<artifactId>maven-war-plugin</artifactId>
+      	<configuration>
+      		<version>3.0</version>
+      	</configuration>
+      </plugin>
+    </plugins>
+  </build>
+  
+  <dependencies>
+    <dependency>
+    <groupId>javax.servlet</groupId>
+    <artifactId>javax.servlet-api</artifactId>
+    <version>3.0.1</version>
+    <scope>provided</scope>
+</dependency>
+
+<dependency>
+    <groupId>javax.servlet.jsp</groupId>
+    <artifactId>jsp-api</artifactId>
+    <version>2.1</version>
+    <scope>provided</scope>
+
+</dependency>  
+ <dependency>
+   <groupId>com.icss.etc</groupId>
+   <artifactId>myjava</artifactId>
+   <version>1</version>
+ </dependency>
+
+
+<dependency>
+    <groupId>junit</groupId>
+    <artifactId>junit</artifactId>
+    <version>4.12</version>
+</dependency>
+<!--  mysql依赖 -->
+<dependency>
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+    <version>5.1.6</version>
+</dependency>
+   <!--  oracle的依赖 -->
+   <!-- https://mvnrepository.com/artifact/com.oracle/ojdbc14 -->
+  <dependency>
+          <groupId>com.oracle</groupId>
+          <artifactId>ojdbc6</artifactId>
+          <version>11.2.0.1.0</version>
+        </dependency>
+    
+    <!-- https://mvnrepository.com/artifact/org.mybatis/mybatis -->
+<dependency>
+    <groupId>org.mybatis</groupId>
+    <artifactId>mybatis</artifactId>
+    <version>3.4.5</version>
+</dependency>
+        
+  </dependencies>
+  
+</project>
+
+
+接下来：创建mybatis主配置文件，配置文件的主公有约束文件tld：http://www.mybatis.org/mybatis-3/zh/getting-started.html
+没有封装的时候（原生配置数据库，这里是mysql，还可以配置oracle）
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+  <environments default="mysql">
+  
+  <!-- mysql的环境 -->
+    <environment id="mysql">
+      <transactionManager type="JDBC"/>
+      <dataSource type="POOLED">
+        <property name="driver" value="com.mysql.jdbc.Driver"/>
+        <property name="url" value="jdbc:mysql://127.0.0.1:3306/message"/>
+        <property name="username" value="root"/>
+        <property name="password" value="123456"/>
+      </dataSource>
+    </environment>
+    
+    <!--  oracle 的环境 -->
+    <environment id="oracle">
+      <transactionManager type="JDBC"/>
+      <dataSource type="POOLED">
+        <property name="driver" value=""/>
+        <property name="url" value=""/>
+        <property name="username" value=""/>
+        <property name="password" value=""/>
+      </dataSource>
+    </environment>
+    
+    <!--  test的环境 -->
+    <environment id="test">
+      <transactionManager type="JDBC"/>
+      <dataSource type="POOLED">
+        <property name="driver" value=""/>
+        <property name="url" value=""/>
+        <property name="username" value=""/>
+        <property name="password" value=""/>
+      </dataSource>
+    </environment>
+  </environments>
+  
+  
+  <mappers>
+    <mapper resource="mapping/UserSql.xml"/>
+  </mappers>
+</configuration>
+
+也可以进行封装版的，创建一个properties文件，在该文件中写入数据库的配置 ，然后在主配置文件中调用该文件，在环境中写入相应的参数就可以，这样就相对的简单
+像这样子
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+<properties resource="com/properties/jdbc.properties"></properties>
+
+  <environments default="mysql">
+    <environment id="mysql">
+      <transactionManager type="JDBC"/>
+      <dataSource type="POOLED">
+        <property name="driver" value="${mysql.driver}"/>
+        <property name="url" value="${mysql.url}"/>
+        <property name="username" value="${mysql.username}"/>
+        <property name="password" value="${mysql.password}"/>
+      </dataSource>
+    </environment>
+  </environments>
+  <mappers>
+    <mapper resource="com/mappers"/>
+  </mappers>
+</configuration>
+
+
+接下来创建一个xml文件，用于将数据库中的用户表的sql语句，全部写在这个文件中，在官网找到tld文件约束，在这个文件中可以写入增删改查的语句
+像这样子：
+
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--  namespace:找到这个userSql的配置文件的唯一性标识 -->
+<mapper namespace="maping.UserSql">
+ 
+  
+  
+  
+</mapper>
+
+添加sql语句像这样子：
+
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--  namespace:找到这个userSql的配置文件的 -->
+<mapper namespace="maping.UserSql">
+   <!-- 给当前的sql一个id  ，配置结果返回的数据结构： 默认实体类的属性和表的字段一致，mybatis进行自动装配 -->
+   <select id="getCusById"  resultType="com.icss.beans.Customer" >
+       select *  from customer where id=1
+   </select>
+  
+</mapper>
+
+
+最后可以写一个测试类来测试一下是不是OK，在这类里，要运用工厂单例模式进行装配，
+原理是酱紫的：
+MyBatis框架主要是围绕着SqlSessionFactory这个类进行的，这个的创建过程如下：
+定义一个Configuration对象，其中包含数据源、事务、mapper文件资源以及影响数据库行为属性设置settings
+通过配置对象，则可以创建一个SqlSessionFactoryBuilder对象
+通过 SqlSessionFactoryBuilder 获得SqlSessionFactory 的实例。
+SqlSessionFactory 的实例可以获得操作数据的SqlSession实例，通过这个实例对数据库进行操作
+具体看看SqlSessionFactory的创建
+
+public class TestMain {
+  public static void main(String[] args) {
+	  //首先加载一下主配置文件
+   public class TestMain {
+  public static void main(String[] args) {
+	  //mybatis 
+	  String congif="mybatis-config.xml";
+	  InputStream inputStream;
+	try {
+		inputStream = Resources.getResourceAsStream(congif);
+		SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+
+		SqlSession sql=  sqlSessionFactory.openSession();
+		Object obj=sql.selectOne("maping.UserSql.getCusById");
+		System.out.println(obj);
+		
+	} catch (IOException e) {
+		e.printStackTrace();
+	}  
+}
+}
+
+
+区分resultmap和resulttype的区别：
+resulttype：使用resultType进行输出映射，只有查询出来的列名和pojo（实体bean）中的属性名一致，该列才可以映射成功。
+resultmap：如果查询出来的列名和pojo的属性名不一致，通过定义一个resultMap对列名和pojo属性名之间作一个映射关系。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
